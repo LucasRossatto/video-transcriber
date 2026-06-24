@@ -1,0 +1,512 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de Transcrição do YouTube: Grátis e Instantâneo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="page-wrapper">
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="container">
+    <a class="nav-brand" href="/">
+      <span class="nav-name">TranscribeYT</span>
+    </a>
+    <a class="nav-github" href="https://github.com/LucasRossatto" target="_blank" rel="noopener noreferrer">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+      LucasRossatto
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container" style="display:flex;flex-direction:column;align-items:center;text-align:center;">
+
+    <h1>Transcrição do YouTube<br /><em>em segundos</em></h1>
+    <p class="hero-sub">Cole qualquer link do YouTube e obtenha a transcrição completa na hora. Suporta mais de 20 idiomas. Sem cadastro necessário.</p>
+
+    <!-- INPUT CARD -->
+    <div class="input-card">
+      <span class="input-label">Link do vídeo</span>
+      <div class="input-row">
+        <span class="icon-check" id="iconCheck">✓</span>
+        <input
+          type="text"
+          id="urlInput"
+          placeholder="Cole o link do vídeo do YouTube aqui…"
+          autocomplete="off"
+          spellcheck="false"
+          oninput="handleInput()"
+        />
+        <button class="icon-clear" id="iconClear" onclick="clearInput()" aria-label="Limpar">×</button>
+      </div>
+      <div class="input-footer">
+        <div class="translate-row">
+          <input type="checkbox" id="translate" />
+          <span onclick="document.getElementById('translate').click()">Traduzir para português</span>
+        </div>
+        <button class="btn-generate" id="btnGenerate" onclick="transcribe()">
+          <div class="spinner" id="spinner"></div>
+          <span id="btnLabel">Gerar Transcrição</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <!-- LOADING STATE -->
+    <div class="loading-card" id="loadingCard">
+      <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+      <div class="loading-lines">
+        <div class="loading-line" style="width:30%"></div>
+        <div class="loading-line" style="width:80%"></div>
+        <div class="loading-line" style="width:65%"></div>
+        <div class="loading-line" style="width:75%"></div>
+        <div class="loading-line" style="width:55%"></div>
+      </div>
+    </div>
+
+    <!-- DOWNLOAD CARD -->
+    <div class="download-card" id="downloadCard">
+      <div class="download-info">
+        <span class="download-filename" id="downloadFilename"></span>
+        <span class="download-meta">Transcrição pronta</span>
+      </div>
+      <div class="download-actions">
+        <select class="format-select" id="formatSelect" onchange="updateDownloadLink()">
+          <option value="txt">.txt</option>
+          <option value="srt">.srt</option>
+          <option value="md">.md</option>
+        </select>
+        <button class="btn-copy" id="btnCopy" onclick="copyTranscript()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copiar
+        </button>
+        <a class="btn-download" id="downloadLink" download>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Baixar
+        </a>
+      </div>
+    </div>
+
+    <!-- TRANSCRIPT PREVIEW -->
+    <div class="transcript-preview" id="transcriptPreview">
+      <div class="preview-header">
+        <div class="preview-header-left">
+          <span class="preview-dot"></span>
+          Transcrição
+        </div>
+        <div class="preview-controls">
+          <div class="lang-toggle" id="langToggle" style="display:none;">
+            <button id="btnLangOriginal" onclick="switchLang('original')" class="active">Original</button>
+            <button id="btnLangTranslated" onclick="switchLang('translated')">Português</button>
+          </div>
+          <button class="btn-toggle-preview" id="btnTogglePreview" onclick="togglePreview()">
+            <svg id="iconToggle" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            Recolher
+          </button>
+        </div>
+      </div>
+      <div class="preview-body" id="previewBody"></div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- FEATURES -->
+<section class="features-section">
+  <div class="container">
+
+    <div class="features-header">
+      <span class="section-eyebrow">Funcionalidades</span>
+      <h2 class="section-title">O que essa ferramenta faz</h2>
+    </div>
+
+    <div class="feature-row">
+      <div class="feature-text">
+        <h3 class="section-title">Transcrição completa de qualquer vídeo</h3>
+        <p class="section-desc">Obtenha a transcrição palavra por palavra de qualquer vídeo público do YouTube em segundos. Sem edição, sem espera. Cole o link e clique em gerar. Funciona com aulas, podcasts, entrevistas e muito mais.</p>
+      </div>
+      <div class="feature-img">
+        <div class="mock-transcript">
+          <div class="mock-line"><span class="mock-ts">00:00:04</span><span class="mock-txt">Bem-vindos de volta ao canal. Hoje vamos falar sobre algo muito importante...</span></div>
+          <div class="mock-line"><span class="mock-ts">00:00:11</span><span class="mock-txt">O conceito de transcrição automática mudou a forma como pesquisadores consomem conteúdo.</span></div>
+          <div class="mock-line"><span class="mock-ts">00:00:19</span><span class="mock-txt">Vou mostrar exatamente como isso funciona, passo a passo.</span></div>
+          <div class="mock-line"><span class="mock-ts">00:00:26</span><span class="mock-txt">Primeiro, copie o link do vídeo diretamente do seu navegador...</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-row reverse">
+      <div class="feature-text">
+        <h3 class="section-title">Ideal para estudantes e criadores</h3>
+        <p class="section-desc">Seja para fazer anotações de uma aula, pesquisar um tema ou transformar o conteúdo do seu vídeo em posts e artigos. Nossa ferramenta poupa horas de trabalho manual.</p>
+      </div>
+      <div class="feature-img">
+        <div class="mock-glow">
+          <div class="glow-circle">🎓</div>
+          <div class="mock-tags">
+            <div class="mock-tag">📋 Notas de Aula</div>
+            <div class="mock-tag">🎙️ Roteiro</div>
+            <div class="mock-tag">📝 Blog</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-row">
+      <div class="feature-text">
+        <h3 class="section-title">Suporte a mais de 20 idiomas</h3>
+        <p class="section-desc">A ferramenta detecta o idioma do vídeo e retorna a transcrição no idioma original. Do português e espanhol ao japonês e árabe. Sem seleção manual necessária.</p>
+      </div>
+      <div class="feature-img">
+        <div>
+          <div class="mock-globe">🌍</div>
+          <div class="mock-flags">
+            <span>🇧🇷</span><span>🇺🇸</span><span>🇯🇵</span>
+            <span>🇩🇪</span><span>🇫🇷</span><span>🇸🇦</span>
+            <span>🇰🇷</span><span>🇮🇳</span><span>🇨🇳</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-row reverse">
+      <div class="feature-text">
+        <h3 class="section-title">Copie e baixe na hora</h3>
+        <p class="section-desc">Com a transcrição pronta, baixe como arquivo .txt, .srt ou .md direto para o seu dispositivo, ou copie o texto com um clique. Simples e pronto para usar em qualquer editor.</p>
+      </div>
+      <div class="feature-img">
+        <div class="mock-btns">
+          <div class="mock-ready">Transcrição pronta</div>
+          <div class="mock-excerpt">"Hoje vamos falar sobre o futuro da inteligência artificial e como ela vai transformar a criação de conteúdo para milhões de criadores..."</div>
+          <div class="mock-action-row">
+            <div class="mock-action">📋 Copiar</div>
+            <div class="mock-action">⬇️ Baixar .txt</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- FAQ -->
+<section class="faq-section">
+  <div class="container">
+    <div class="faq-header">
+      <span class="section-eyebrow">Dúvidas</span>
+      <h2 class="section-title">Perguntas Frequentes</h2>
+      <p class="section-desc" style="max-width:480px;margin:0 auto;">Dúvidas comuns sobre como gerar transcrições de vídeos do YouTube.</p>
+    </div>
+
+    <div class="faq-list" id="faqList">
+
+      <div class="faq-item">
+        <button class="faq-btn" onclick="toggleFaq(this)">
+          Como gerar a transcrição de um vídeo do YouTube?
+          <span class="faq-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </button>
+        <div class="faq-answer">Cole a URL do vídeo no campo acima e clique em "Gerar Transcrição". A ferramenta busca as legendas disponíveis e exibe a transcrição na tela em segundos, sem precisar de conta.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-btn" onclick="toggleFaq(this)">
+          A ferramenta é gratuita?
+          <span class="faq-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </button>
+        <div class="faq-answer">Sim, completamente gratuita. Sem cadastro, sem pagamento e sem limite de uso. Basta colar o link e gerar.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-btn" onclick="toggleFaq(this)">
+          Quais idiomas são suportados?
+          <span class="faq-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </button>
+        <div class="faq-answer">A ferramenta prioriza português (pt-BR), depois inglês, e por fim qualquer legenda disponível no vídeo: japonês, alemão, árabe, coreano e muito mais. Se o vídeo tiver legenda, ela é retornada no idioma original.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-btn" onclick="toggleFaq(this)">
+          Posso traduzir a transcrição para português?
+          <span class="faq-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </button>
+        <div class="faq-answer">Sim. Marque a opção "Traduzir para português" antes de gerar. A ferramenta traduz qualquer idioma para pt-BR via Google Tradutor, preservando os timestamps. No preview você pode alternar entre o idioma original e o traduzido.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-btn" onclick="toggleFaq(this)">
+          Como baixar ou copiar a transcrição?
+          <span class="faq-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </button>
+        <div class="faq-answer">Após a geração, aparece um card com o nome do vídeo e dois botões: "Copiar" (copia o texto para a área de transferência) e "Baixar" (salva o arquivo com o título do vídeo como nome). Você também pode escolher o formato: .txt, .srt ou .md.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-btn" onclick="toggleFaq(this)">
+          Para que posso usar a transcrição?
+          <span class="faq-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </button>
+        <div class="faq-answer">Transcrições são úteis para anotações de aulas, pesquisas, roteiros, artigos de blog, legendas para redes sociais e qualquer situação onde você precise do conteúdo falado em formato de texto.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <span>© 2025 TranscribeYT — Todos os direitos reservados.</span>
+  </div>
+</footer>
+
+</div><!-- /page-wrapper -->
+
+<script>
+  let _lastTranscriptText = '';
+  let _originalText = null;
+  let _translatedText = null;
+  let _activeLang = 'translated';
+  let _data = null;
+
+  function handleInput() {
+    const val = document.getElementById('urlInput').value;
+    document.getElementById('iconCheck').style.display = val ? 'inline' : 'none';
+    document.getElementById('iconClear').style.display = val ? 'inline' : 'none';
+  }
+
+  function clearInput() {
+    document.getElementById('urlInput').value = '';
+    document.getElementById('iconCheck').style.display = 'none';
+    document.getElementById('iconClear').style.display = 'none';
+    document.getElementById('downloadCard').classList.remove('visible');
+    document.getElementById('transcriptPreview').classList.remove('visible');
+    document.getElementById('previewBody').innerHTML = '';
+    document.getElementById('langToggle').style.display = 'none';
+    document.getElementById('status').style.display = 'none';
+    document.getElementById('loadingCard').classList.remove('visible');
+    document.getElementById('formatSelect').value = 'txt';
+    _lastTranscriptText = '';
+    _originalText = null;
+    _translatedText = null;
+    _data = null;
+  }
+
+  async function transcribe() {
+    const url = document.getElementById('urlInput').value.trim();
+    const translate = document.getElementById('translate').checked;
+    const btn = document.getElementById('btnGenerate');
+    const spinner = document.getElementById('spinner');
+    const btnLabel = document.getElementById('btnLabel');
+    const status = document.getElementById('status');
+    const downloadCard = document.getElementById('downloadCard');
+
+    if (!url) { showStatus('error', 'Por favor, informe a URL do vídeo.'); return; }
+
+    const ytRegex = /^https?:\/\/(www\.)?youtube\.com\/watch\?.*v=[\w-]{11}/;
+    if (!ytRegex.test(url)) {
+      showStatus('error', 'URL inválida. Use o formato: https://www.youtube.com/watch?v=ID_DO_VIDEO');
+      return;
+    }
+
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    btnLabel.textContent = 'Gerando…';
+    status.style.display = 'none';
+    downloadCard.classList.remove('visible');
+    document.getElementById('loadingCard').classList.add('visible');
+    document.getElementById('transcriptPreview').classList.remove('visible');
+
+    try {
+      const res = await fetch('/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, translate }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showStatus('error', data.error || 'Erro desconhecido. Tente novamente.');
+        return;
+      }
+
+      _data = data;
+      _translatedText = data.translated ? data.text : null;
+      _originalText = data.original_text || data.text;
+      _lastTranscriptText = data.text;
+      _activeLang = data.translated ? 'translated' : 'original';
+
+      document.getElementById('formatSelect').value = 'txt';
+      updateDownloadLink();
+
+      const btnCopy = document.getElementById('btnCopy');
+      btnCopy.classList.remove('copied');
+      btnCopy.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar
+      `;
+
+      const langToggle = document.getElementById('langToggle');
+      if (data.translated) {
+        langToggle.style.display = 'flex';
+        document.getElementById('btnLangOriginal').classList.remove('active');
+        document.getElementById('btnLangTranslated').classList.add('active');
+      } else {
+        langToggle.style.display = 'none';
+      }
+
+      downloadCard.classList.add('visible');
+      renderPreview(data.text);
+
+      showStatus('success', 'Transcrição gerada com sucesso!');
+    } catch {
+      showStatus('error', 'Erro de conexão com o servidor. Verifique sua internet e tente novamente.');
+    } finally {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+      btnLabel.textContent = 'Gerar Transcrição';
+      document.getElementById('loadingCard').classList.remove('visible');
+    }
+  }
+
+  function _getTextForFormat(lang, format) {
+    if (!_data) return '';
+    if (lang === 'original') {
+      if (format === 'srt') return _data.original_text_srt || '';
+      if (format === 'md')  return _data.original_text_md  || '';
+      return _originalText || '';
+    }
+    if (format === 'srt') return _data.text_srt || '';
+    if (format === 'md')  return _data.text_md  || '';
+    return _data.text || '';
+  }
+
+  function updateDownloadLink() {
+    if (!_data) return;
+    const format = document.getElementById('formatSelect').value;
+    const mimeTypes = { txt: 'text/plain', srt: 'text/plain', md: 'text/markdown' };
+    const text = _getTextForFormat(_activeLang, format);
+    const blob = new Blob([text], { type: `${mimeTypes[format]};charset=utf-8` });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.getElementById('downloadLink');
+    link.href = objectUrl;
+    link.download = `${_data.base_name}.${format}`;
+    document.getElementById('downloadFilename').textContent = `${_data.base_name}.${format}`;
+    _lastTranscriptText = _getTextForFormat(_activeLang, 'txt');
+  }
+
+  function switchLang(lang) {
+    if (lang === _activeLang) return;
+    _activeLang = lang;
+    const text = lang === 'original' ? _originalText : _translatedText;
+    _lastTranscriptText = text;
+    document.getElementById('btnLangOriginal').classList.toggle('active', lang === 'original');
+    document.getElementById('btnLangTranslated').classList.toggle('active', lang === 'translated');
+    updateDownloadLink();
+    renderPreview(text);
+  }
+
+  let _previewCollapsed = false;
+
+  function renderPreview(text) {
+    const body = document.getElementById('previewBody');
+    const lines = text.split('\n');
+    const fragments = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      if (/^\d{2}:\d{2}:\d{2}$/.test(line)) {
+        const nextLine = lines[i + 1] ? lines[i + 1].trim() : '';
+        fragments.push(
+          `<div class="preview-line">` +
+            `<span class="preview-ts">${line}</span>` +
+            `<span class="preview-text">${nextLine}</span>` +
+          `</div>`
+        );
+        i++;
+      }
+    }
+
+    body.innerHTML = fragments.join('');
+
+    _previewCollapsed = false;
+    const icon = document.getElementById('iconToggle');
+    icon.setAttribute('points', '18 15 12 9 6 15');
+    document.getElementById('btnTogglePreview').childNodes[2].textContent = ' Recolher';
+    body.style.display = 'block';
+    document.getElementById('transcriptPreview').classList.add('visible');
+  }
+
+  function togglePreview() {
+    const body = document.getElementById('previewBody');
+    const icon = document.getElementById('iconToggle');
+    const btn = document.getElementById('btnTogglePreview');
+    _previewCollapsed = !_previewCollapsed;
+    if (_previewCollapsed) {
+      body.style.display = 'none';
+      icon.setAttribute('points', '6 9 12 15 18 9');
+      btn.childNodes[2].textContent = ' Expandir';
+    } else {
+      body.style.display = 'block';
+      icon.setAttribute('points', '18 15 12 9 6 15');
+      btn.childNodes[2].textContent = ' Recolher';
+    }
+  }
+
+  async function copyTranscript() {
+    if (!_lastTranscriptText) return;
+    await navigator.clipboard.writeText(_lastTranscriptText);
+    const btn = document.getElementById('btnCopy');
+    btn.classList.add('copied');
+    btn.innerHTML = `
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Copiado
+    `;
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar
+      `;
+    }, 2000);
+  }
+
+  function showStatus(type, message) {
+    const s = document.getElementById('status');
+    s.className = `status ${type}`;
+    s.textContent = message;
+    s.style.display = 'block';
+  }
+
+  function toggleFaq(btn) {
+    const item = btn.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  }
+
+  document.getElementById('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') transcribe();
+  });
+</script>
+</body>
+</html>
+
