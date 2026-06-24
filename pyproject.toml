@@ -15,10 +15,10 @@ dependencies = [
 ]
 
 [project.scripts]
-transcribe-video-web = "transcribe_video.server:main"
+transcribe-video-web = "src.server:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/transcribe_video"]
+packages = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
