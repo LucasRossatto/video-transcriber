@@ -168,7 +168,22 @@
       background: #22c55e;
       flex-shrink: 0;
     }
-    .download-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .download-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .format-select {
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 12px; font-family: inherit;
+      padding: 7px 10px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color .12s, color .12s;
+    }
+    .format-select:hover, .format-select:focus {
+      border-color: #3f3f46;
+      color: var(--text);
+    }
 
     /* botão fantasma — Copiar */
     .btn-copy {
@@ -430,6 +445,11 @@
       <span class="download-meta">Transcrição pronta</span>
     </div>
     <div class="download-actions">
+      <select class="format-select" id="formatSelect" onchange="updateDownloadLink()">
+        <option value="txt">.txt</option>
+        <option value="srt">.srt</option>
+        <option value="md">.md</option>
+      </select>
       <button class="btn-copy" id="btnCopy" onclick="copyTranscript()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copiar
@@ -466,7 +486,7 @@
 
 <!-- FEATURES ZIGZAG -->
 <section class="features-section">
-  <h2>Por que criadores e pesquisadores usam nossa ferramenta</h2>
+  <h2>O que essa ferramenta faz</h2>
 
   <!-- Feature 1 -->
   <div class="feature-row">
@@ -620,6 +640,7 @@
   let _originalText = null;
   let _translatedText = null;
   let _activeLang = 'translated';
+  let _data = null;
 
   function handleInput() {
     const val = document.getElementById('urlInput').value;
@@ -636,9 +657,11 @@
     document.getElementById('previewBody').innerHTML = '';
     document.getElementById('langToggle').style.display = 'none';
     document.getElementById('status').style.display = 'none';
+    document.getElementById('formatSelect').value = 'txt';
     _lastTranscriptText = '';
     _originalText = null;
     _translatedText = null;
+    _data = null;
   }
 
   async function transcribe() {
@@ -672,17 +695,14 @@
         return;
       }
 
+      _data = data;
       _translatedText = data.translated ? data.text : null;
       _originalText = data.original_text || data.text;
       _lastTranscriptText = data.text;
       _activeLang = data.translated ? 'translated' : 'original';
 
-      const blob = new Blob([data.text], { type: 'text/plain;charset=utf-8' });
-      const objectUrl = URL.createObjectURL(blob);
-
-      const link = document.getElementById('downloadLink');
-      link.href = objectUrl;
-      link.download = data.filename;
+      document.getElementById('formatSelect').value = 'txt';
+      updateDownloadLink();
 
       const btnCopy = document.getElementById('btnCopy');
       btnCopy.classList.remove('copied');
@@ -701,7 +721,6 @@
         langToggle.style.display = 'none';
       }
 
-      document.getElementById('downloadFilename').textContent = data.filename;
       downloadCard.classList.add('visible');
       renderPreview(data.text);
 
@@ -715,6 +734,32 @@
     }
   }
 
+  function _getTextForFormat(lang, format) {
+    if (!_data) return '';
+    if (lang === 'original') {
+      if (format === 'srt') return _data.original_text_srt || '';
+      if (format === 'md')  return _data.original_text_md  || '';
+      return _originalText || '';
+    }
+    if (format === 'srt') return _data.text_srt || '';
+    if (format === 'md')  return _data.text_md  || '';
+    return _data.text || '';
+  }
+
+  function updateDownloadLink() {
+    if (!_data) return;
+    const format = document.getElementById('formatSelect').value;
+    const mimeTypes = { txt: 'text/plain', srt: 'text/plain', md: 'text/markdown' };
+    const text = _getTextForFormat(_activeLang, format);
+    const blob = new Blob([text], { type: `${mimeTypes[format]};charset=utf-8` });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.getElementById('downloadLink');
+    link.href = objectUrl;
+    link.download = `${_data.base_name}.${format}`;
+    document.getElementById('downloadFilename').textContent = `${_data.base_name}.${format}`;
+    _lastTranscriptText = _getTextForFormat(_activeLang, 'txt');
+  }
+
   function switchLang(lang) {
     if (lang === _activeLang) return;
     _activeLang = lang;
@@ -722,6 +767,7 @@
     _lastTranscriptText = text;
     document.getElementById('btnLangOriginal').classList.toggle('active', lang === 'original');
     document.getElementById('btnLangTranslated').classList.toggle('active', lang === 'translated');
+    updateDownloadLink();
     renderPreview(text);
   }
 

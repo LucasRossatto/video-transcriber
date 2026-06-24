@@ -6,9 +6,22 @@ import urllib.request
 from dataclasses import dataclass
 
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import NoTranscriptFound, TranscriptsDisabled
+from youtube_transcript_api._errors import (
+    AgeRestricted,
+    IpBlocked,
+    NoTranscriptFound,
+    RequestBlocked,
+    TranscriptsDisabled,
+    VideoUnavailable,
+    VideoUnplayable,
+    YouTubeRequestFailed,
+)
 
 _api = YouTubeTranscriptApi()
+
+
+class YouTubeAPIError(Exception):
+    """Erro originado pela API do YouTube (bloqueio, vídeo indisponível, falha de rede)."""
 
 
 @dataclass
@@ -57,6 +70,18 @@ def fetch_transcript(video_id: str) -> TranscriptResult:
         transcript_list = _api.list(video_id)
     except TranscriptsDisabled:
         raise RuntimeError("Este vídeo não possui legendas disponíveis.")
+    except VideoUnavailable:
+        raise YouTubeAPIError("O vídeo não está disponível ou foi removido.")
+    except VideoUnplayable:
+        raise YouTubeAPIError("O vídeo não pode ser reproduzido.")
+    except AgeRestricted:
+        raise YouTubeAPIError("O vídeo possui restrição de idade.")
+    except IpBlocked:
+        raise YouTubeAPIError("O acesso foi bloqueado pelo YouTube. Tente novamente mais tarde.")
+    except RequestBlocked:
+        raise YouTubeAPIError("A requisição foi bloqueada pelo YouTube. Tente novamente mais tarde.")
+    except YouTubeRequestFailed as e:
+        raise YouTubeAPIError(f"Falha na requisição ao YouTube: {e}")
 
     for lang in ("pt", "pt-BR", "pt-PT", "en"):
         try:
@@ -83,6 +108,50 @@ def fetch_transcript(video_id: str) -> TranscriptResult:
         pass
 
     raise RuntimeError("Nenhuma legenda disponível para este vídeo.")
+
+
+def convert_text_to_srt(text: str) -> str:
+    """Converte o formato interno (HH:MM:SS\ntexto) para SRT."""
+    lines = text.split("\n")
+    blocks = []
+    i = 0
+    index = 1
+    while i < len(lines):
+        line = lines[i].strip()
+        if re.match(r"^\d{2}:\d{2}:\d{2}$", line) and i + 1 < len(lines):
+            start_ts = line.replace(":", ":", 2)
+            end_ts = lines[i + 2].strip() if i + 2 < len(lines) and re.match(r"^\d{2}:\d{2}:\d{2}$", lines[i + 2].strip()) else _add_seconds(start_ts, 3)
+            content = lines[i + 1].strip()
+            blocks.append(f"{index}\n{start_ts},000 --> {end_ts},000\n{content}\n")
+            index += 1
+            i += 2
+        else:
+            i += 1
+    return "\n".join(blocks)
+
+
+def convert_text_to_md(text: str, title: str = "") -> str:
+    """Converte o formato interno (HH:MM:SS\ntexto) para Markdown."""
+    lines = text.split("\n")
+    parts = [f"# {title}\n" if title else "# Transcrição\n"]
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if re.match(r"^\d{2}:\d{2}:\d{2}$", line) and i + 1 < len(lines):
+            content = lines[i + 1].strip()
+            parts.append(f"**`{line}`** {content}\n")
+            i += 2
+        else:
+            i += 1
+    return "\n".join(parts)
+
+
+def _add_seconds(timestamp: str, seconds: int) -> str:
+    h, m, s = map(int, timestamp.split(":"))
+    total = h * 3600 + m * 60 + s + seconds
+    h2, r = divmod(total, 3600)
+    m2, s2 = divmod(r, 60)
+    return f"{h2:02d}:{m2:02d}:{s2:02d}"
 
 
 def _join_entries(entries) -> str:

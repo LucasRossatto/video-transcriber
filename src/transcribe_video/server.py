@@ -7,7 +7,10 @@ from pathlib import Path
 from flask import Flask, Response, jsonify, render_template, request
 
 from transcribe_video.transcript import (
+    YouTubeAPIError,
     _sanitize_filename,
+    convert_text_to_md,
+    convert_text_to_srt,
     extract_video_id,
     fetch_transcript,
     fetch_video_title,
@@ -38,6 +41,8 @@ def transcribe() -> Response:
 
     try:
         result = fetch_transcript(video_id)
+    except YouTubeAPIError as e:
+        return jsonify({"error": str(e)}), 424
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 422
 
@@ -51,12 +56,18 @@ def transcribe() -> Response:
             return jsonify({"error": "Falha ao traduzir a transcrição."}), 500
 
     title = fetch_video_title(video_id)
-    filename = f"{_sanitize_filename(title)}.txt"
+    base_name = _sanitize_filename(title)
+    final_text = translated_text or original_text
+
     return jsonify({
-        "text": translated_text or original_text,
+        "text": final_text,
+        "text_srt": convert_text_to_srt(final_text),
+        "text_md": convert_text_to_md(final_text, title=title),
         "original_text": original_text if translated_text else None,
+        "original_text_srt": convert_text_to_srt(original_text) if translated_text else None,
+        "original_text_md": convert_text_to_md(original_text, title=title) if translated_text else None,
         "translated": translated_text is not None,
-        "filename": filename,
+        "base_name": base_name,
     })
 
 
