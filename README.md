@@ -2,6 +2,8 @@
 
 Ferramenta para transcrever vídeos do YouTube, disponível como **CLI** e **interface web**. Busca legendas diretamente do YouTube sem necessidade de API key e suporta tradução automática para português via Google Tradutor (gratuito).
 
+![Preview](src/assets/preview.png)
+
 ## Requisitos
 
 - Python 3.10+

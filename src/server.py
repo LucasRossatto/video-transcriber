@@ -6,7 +6,7 @@ from pathlib import Path
 
 from flask import Flask, Response, jsonify, render_template, request
 
-from transcribe_video.transcript import (
+from src.transcript import (
     YouTubeAPIError,
     _sanitize_filename,
     convert_text_to_md,
@@ -15,7 +15,7 @@ from transcribe_video.transcript import (
     fetch_transcript,
     fetch_video_title,
 )
-from transcribe_video.translator import translate_to_portuguese
+from src.translator import translate_to_portuguese
 
 app = Flask(__name__, template_folder="templates")
 
@@ -37,7 +37,7 @@ def transcribe() -> Response:
     try:
         video_id = extract_video_id(url)
     except ValueError:
-        return jsonify({"error": "URL do YouTube inválida."}), 400
+        return jsonify({"error": "URL inválida. Use o formato: https://www.youtube.com/watch?v=ID_DO_VIDEO"}), 400
 
     try:
         result = fetch_transcript(video_id)
