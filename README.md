@@ -1,6 +1,6 @@
 # transcribe-video
 
-CLI para transcrever vídeos do YouTube para arquivos `.txt`. Busca legendas em português automaticamente; se não houver, oferece a opção de buscar em inglês e traduzir para português.
+Ferramenta para transcrever vídeos do YouTube, disponível como **CLI** e **interface web**. Busca legendas diretamente do YouTube sem necessidade de API key e suporta tradução automática para português via Google Tradutor (gratuito).
 
 ## Requisitos
 
@@ -12,38 +12,45 @@ CLI para transcrever vídeos do YouTube para arquivos `.txt`. Busca legendas em 
 pip install -e .
 ```
 
+Para desenvolvimento:
+
+```bash
+pip install -e ".[dev]"
+```
+
 ## Uso
 
 ```bash
-transcribe-video <URL_DO_VIDEO>
+transcribe-video-web
 ```
 
-**Exemplos:**
+Sobe um servidor Flask em `http://localhost:5000`.
 
-```bash
-# Transcreve e salva como <video_id>.txt
-transcribe-video "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+**Funcionalidades da interface:**
 
-# Salva em arquivo específico
-transcribe-video "https://www.youtube.com/watch?v=dQw4w9WgXcQ" -o minha_transcricao.txt
+- Cole a URL do vídeo e clique em **Gerar Transcrição**
+- Marque **"Traduzir para português"** para traduzir qualquer idioma automaticamente
+- Preview da transcrição com timestamps na própria página
+- Se traduzido, alterne entre o idioma original e o português no preview
+- Escolha o formato de download: `.txt`, `.srt` ou `.md`
+- Botão **Copiar** para copiar direto para a área de transferência
+- Botão **Baixar** para salvar o arquivo com o título do vídeo como nome
 
-# Não pergunta sobre tradução (mantém em inglês se necessário)
-transcribe-video "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --no-translate
-```
+## Formatos de saída
 
-## Comportamento
+| Formato | Descrição |
+|---------|-----------|
+| `.txt` | Texto com timestamps (`HH:MM:SS\ntexto`) |
+| `.srt` | Formato padrão de legenda (SubRip) |
+| `.md` | Markdown com timestamps em negrito |
 
-1. Busca legenda em português (pt, pt-BR, pt-PT)
-2. Se não encontrar, busca em inglês
-3. Se a legenda for em inglês, pergunta se deseja traduzir para português
-4. Salva o resultado em `.txt`
+## Tradução
+
+A tradução usa a biblioteca `deep-translator` com o Google Tradutor, sem necessidade de API key. Os timestamps são preservados — apenas as linhas de texto são traduzidas e reconstruídas no mesmo formato.
 
 ## Desenvolvimento
 
 ```bash
-# Instalar com dependências de desenvolvimento
-pip install -e ".[dev]"
-
 # Rodar testes
 pytest
 ```
